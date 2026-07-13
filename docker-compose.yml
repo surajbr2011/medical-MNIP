@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: mnip-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mnip
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mnip"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: mnip-neo4j
+    ports:
+      - "7474:7474" # Browser interface
+      - "7687:7687" # Bolt interface
+    environment:
+      NEO4J_AUTH: neo4j/mnip_neo4j
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p mnip_neo4j 'RETURN 1'"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 90s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mnip-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Starts server in background, waits for availability, pulls mistral model, and waits on background process.
+    entrypoint: [ "/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull mistral && wait" ]
+
+  mnip-api:
+    build: .
+    container_name: mnip-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/mnip
+      - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/mnip
+      - NEO4J_URI=bolt://neo4j:7687
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: ["uvicorn", "mnip.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  mnip-ui:
+    build: .
+    container_name: mnip-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_HOST=http://mnip-api:8000
+    depends_on:
+      - mnip-api
+    command: ["streamlit", "run", "dashboard/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  ollama_data:
