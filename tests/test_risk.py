@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
-from mnip.api.schemas import FHIREpisode
-from mnip.risk.features import extract_all_features, to_numpy, FeatureVector
-from mnip.risk.model import predict_risk, load_risk_ensemble
+from backend.api.schemas import FHIREpisode
+from backend.risk.features import extract_all_features, to_numpy, FeatureVector
+from backend.risk.model import predict_risk, load_risk_ensemble
 
 def test_feature_extraction():
     episode = FHIREpisode(
@@ -23,9 +23,9 @@ def test_feature_extraction():
     assert fv.treatment_delay_hours_missing is False
     assert fv.diagnosis_delay_hours_missing is True
     
-    # Check shape
+    # Check shape (32 features + 32 missingness flags = 64 dimensions)
     arr = to_numpy(fv)
-    assert arr.shape == (62,)
+    assert arr.shape == (64,)
 
 def test_predict_risk():
     episode = FHIREpisode(
@@ -37,5 +37,5 @@ def test_predict_risk():
     result = predict_risk(episode)
     assert result.risk_score >= 0.0 and result.risk_score <= 1.0
     assert result.risk_level in ["Minimal", "Moderate", "High", "Critical"]
-    assert len(result.shap_values) == 31
+    assert len(result.shap_values) == 32
     assert isinstance(result.narrative, str)

@@ -1,8 +1,8 @@
 import shap
 import numpy as np
 from typing import Dict, List, Tuple
-from mnip.api.schemas import FHIREpisode
-from mnip.risk.features import FeatureVector, to_numpy, FEATURE_NAMES
+from backend.api.schemas import FHIREpisode
+from backend.risk.features import FeatureVector, to_numpy, FEATURE_NAMES
 
 def explain_risk(ensemble, fv: FeatureVector, risk_score: float) -> Tuple[Dict[str, float], str, List[str]]:
     """

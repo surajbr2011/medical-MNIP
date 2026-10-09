@@ -3,9 +3,9 @@ import logging
 from fastapi import Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from mnip.config import settings
+from backend.config import settings
 
-logger = logging.getLogger("mnip")
+logger = logging.getLogger("backend")
 logging.basicConfig(level=logging.INFO)
 
 class LoggingAndSecurityMiddleware(BaseHTTPMiddleware):

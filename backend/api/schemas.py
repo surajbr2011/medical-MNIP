@@ -22,8 +22,9 @@ class FHIREpisode(BaseModel):
 
 # --- Module 2: Detection ---
 class NegligenceDetectRequest(BaseModel):
-    episode_id: str
-    note_text: str
+    episode_id: Optional[str] = "ep-default"
+    note_text: Optional[str] = None
+    clinical_note: Optional[str] = None
 
 class NegligenceResult(BaseModel):
     negligent: bool
@@ -44,7 +45,8 @@ class RiskScoreResponse(BaseModel):
 
 # --- Module 4: Legal RAG ---
 class LegalQueryRequest(BaseModel):
-    incident_description: str
+    incident_description: Optional[str] = None
+    query: Optional[str] = None
     top_k: int = 5
 
 class LegalQueryResponse(BaseModel):
@@ -54,7 +56,7 @@ class LegalQueryResponse(BaseModel):
     liability_assessment: str
 
 # --- Combined Episode Report ---
-class FullMNIPReport(BaseModel):
+class FullbackendReport(BaseModel):
     episode_id: str
     ingestion: Dict[str, Any]
     detection: Optional[NegligenceResult] = None

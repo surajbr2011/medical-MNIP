@@ -4,9 +4,9 @@ import logging
 import chromadb
 from chromadb.utils import embedding_functions
 
-from mnip.config import settings
+from backend.config import settings
 
-logger = logging.getLogger("mnip.legal.ingestion")
+logger = logging.getLogger("backend.legal.ingestion")
 
 # Standard Indian Medico-Legal Precedents
 MOCK_LEGAL_CORPUS = [

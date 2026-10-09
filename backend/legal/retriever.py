@@ -1,8 +1,8 @@
 import logging
 from typing import List, Dict, Any
-from mnip.legal.ingestion import get_chroma_collection
+from backend.legal.ingestion import get_chroma_collection
 
-logger = logging.getLogger("mnip.legal.retriever")
+logger = logging.getLogger("backend.legal.retriever")
 
 def retrieve_chunks(query: str) -> List[Dict[str, Any]]:
     """

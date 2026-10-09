@@ -1,7 +1,7 @@
 import pytest
-from mnip.ingestion.fhir_parser import parse_fhir_bundle_to_episode, clean_reference_id
-from mnip.ingestion.deidentifier import deidentify_text
-from mnip.api.schemas import FHIREpisode
+from backend.ingestion.fhir_parser import parse_fhir_bundle_to_episode, clean_reference_id
+from backend.ingestion.deidentifier import deidentify_text
+from backend.api.schemas import FHIREpisode
 
 def test_clean_reference_id():
     assert clean_reference_id("Patient/123") == "123"

@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from functools import lru_cache
 from sentence_transformers import CrossEncoder
 
-logger = logging.getLogger("mnip.legal.reranker")
+logger = logging.getLogger("backend.legal.reranker")
 
 @lru_cache(maxsize=1)
 def get_cross_encoder() -> Any:

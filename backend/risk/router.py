@@ -4,12 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from mnip.database.connection import get_db
-from mnip.api.schemas import RiskScoreRequest, RiskScoreResponse, FHIREpisode
-from mnip.ingestion.models import Encounter, Observation, MedicationRequest, Procedure, DocumentReference
-from mnip.risk.model import predict_risk
+from backend.database.connection import get_db
+from backend.api.schemas import RiskScoreRequest, RiskScoreResponse, FHIREpisode
+from backend.ingestion.models import Encounter, Observation, MedicationRequest, Procedure, DocumentReference
+from backend.risk.model import predict_risk
 
-logger = logging.getLogger("mnip.risk.router")
+logger = logging.getLogger("backend.risk.router")
 router = APIRouter(prefix="/risk", tags=["risk"])
 
 async def fetch_episode_from_db(episode_id: str, db: AsyncSession) -> FHIREpisode:

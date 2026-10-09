@@ -3,7 +3,7 @@ from typing import Tuple, List
 from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
 from presidio_anonymizer import AnonymizerEngine
 
-logger = logging.getLogger("mnip.deidentifier")
+logger = logging.getLogger("backend.deidentifier")
 
 # Initialize engines
 analyzer = AnalyzerEngine()

@@ -7,9 +7,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.isotonic import IsotonicRegression
 
-from mnip.config import settings
-from mnip.api.schemas import RiskScoreResponse, FHIREpisode
-from mnip.risk.features import extract_all_features, to_numpy, FEATURE_NAMES
+from backend.config import settings
+from backend.api.schemas import RiskScoreResponse, FHIREpisode
+from backend.risk.features import extract_all_features, to_numpy, FEATURE_NAMES
 
 class StackingEnsemble:
     """Stacking Ensemble combining LightGBM and RandomForest with Isotonic Regression calibration."""
@@ -118,7 +118,7 @@ def predict_risk(episode: FHIREpisode) -> RiskScoreResponse:
         
     # 4. Generate SHAP explanations
     # Pre-import shap_explainer to avoid circular dependencies
-    from mnip.risk.shap_explainer import explain_risk
+    from backend.risk.shap_explainer import explain_risk
     shap_values, narrative, top_drivers = explain_risk(ensemble, fv, risk_score)
     
     return RiskScoreResponse(

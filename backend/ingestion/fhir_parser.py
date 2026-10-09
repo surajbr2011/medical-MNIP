@@ -13,9 +13,9 @@ from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.procedure import Procedure
 from fhir.resources.documentreference import DocumentReference
 
-from mnip.api.schemas import FHIREpisode
+from backend.api.schemas import FHIREpisode
 
-logger = logging.getLogger("mnip.fhir_parser")
+logger = logging.getLogger("backend.fhir_parser")
 
 def clean_reference_id(ref: Optional[str]) -> Optional[str]:
     """Extracts '123' from 'Patient/123' or 'Encounter/456'"""

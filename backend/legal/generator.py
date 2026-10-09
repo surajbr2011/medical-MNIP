@@ -2,9 +2,9 @@ import httpx
 import json
 import logging
 from typing import List, Dict, Any
-from mnip.config import settings
+from backend.config import settings
 
-logger = logging.getLogger("mnip.legal.generator")
+logger = logging.getLogger("backend.legal.generator")
 
 def generate_fallback_analysis(incident_description: str, reranked_chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """

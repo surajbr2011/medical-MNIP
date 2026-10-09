@@ -5,8 +5,8 @@ from functools import lru_cache
 from transformers import AutoTokenizer, AutoModel
 from typing import List, Dict, Any, Tuple
 
-from mnip.config import settings
-from mnip.api.schemas import NegligenceResult
+from backend.config import settings
+from backend.api.schemas import NegligenceResult
 
 # Device selection: CUDA, MPS (Apple Silicon), or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
@@ -55,7 +55,7 @@ class BioClinicalBERTMultiTaskClassifier(nn.Module):
 def get_detection_model_and_tokenizer() -> Tuple[BioClinicalBERTMultiTaskClassifier, AutoTokenizer]:
     """Loads tokenizer and model weights once (singleton pattern)."""
     model_path = settings.CLINICALBERT_MODEL_PATH
-    local_weights_dir = "models/clinicalbert_mnip"
+    local_weights_dir = "models/clinicalbert_backend"
     
     # Load tokenizer
     try:
@@ -84,7 +84,7 @@ def predict_negligence(text: str) -> NegligenceResult:
     model, tokenizer = get_detection_model_and_tokenizer()
     
     # Pre-import explainer to avoid circular dependencies
-    from mnip.detection.explainer import get_token_attributions
+    from backend.detection.explainer import get_token_attributions
     
     inputs = tokenizer(
         text,

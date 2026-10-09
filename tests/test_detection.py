@@ -1,6 +1,6 @@
 import pytest
-from mnip.detection.model import predict_negligence, batch_predict_negligence
-from mnip.api.schemas import NegligenceResult
+from backend.detection.model import predict_negligence, batch_predict_negligence
+from backend.api.schemas import NegligenceResult
 
 def test_predict_negligence():
     text = "The doctor delayed the appendectomy by 48 hours without clinical justification, leading to perforation."

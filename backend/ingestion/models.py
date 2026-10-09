@@ -1,7 +1,7 @@
 import datetime
 from sqlalchemy import String, Integer, DateTime, ForeignKey, Text, JSON, Float, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from mnip.database.connection import Base
+from backend.database.connection import Base
 from typing import List, Dict, Any, Optional
 
 class Patient(Base):

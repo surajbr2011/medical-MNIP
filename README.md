@@ -77,25 +77,34 @@ mnip/
    ```
    *Note: On first boot, the Ollama container will pull the `mistral` LLM model automatically via its entrypoint script.*
 
-### Option B: Running Locally
+### Option B: Running Locally (Without Docker)
 
-1. Create a Python 3.11 virtual environment and install dependencies:
-   ```bash
+1. Activate your Python 3.11 virtual environment and install dependencies:
+   ```powershell
+   # Windows PowerShell
+   .\venv\Scripts\Activate.ps1
    pip install -r requirements.txt
    ```
-2. Verify local database services (Postgres, Neo4j, Ollama) are running and update `.env` variables accordingly.
+2. Verify local database services (Postgres, Neo4j, Ollama) or allow fallback mode.
 3. Seed the ChromaDB legal collection, train base models, and run:
    ```bash
    # 1. Seed Legal DB
-   python -m mnip.legal.ingestion
+   python -m backend.legal.ingestion
    # 2. Train Risk ML Model
-   python -m mnip.risk.trainer
-   # 3. Fine-tune NLP model (requires data/annotated_notes.csv, creates mock if missing)
-   python -m mnip.detection.trainer
-   # 4. Launch FastAPI Server
-   uvicorn mnip.main:app --reload --host 0.0.0.0 --port 8000
-   # 5. Launch Streamlit UI Dashboard
-   streamlit run dashboard/app.py
+   python -m backend.risk.trainer
+   # 3. Launch FastAPI Server
+   uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+4. In a separate terminal, launch the modern React Web App:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   # Access UI at http://localhost:5173
+   ```
+5. (Optional) Launch the Streamlit analytics console:
+   ```bash
+   streamlit run dashboard/app.py --server.port 8501
    ```
 
 ---

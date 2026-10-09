@@ -1,1 +1,1 @@
-# mnip root package
+# backend root package

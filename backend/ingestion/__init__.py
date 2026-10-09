@@ -1,2 +1,2 @@
 # Ingestion module init
-from mnip.ingestion.router import router
+from backend.ingestion.router import router

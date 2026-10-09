@@ -1,8 +1,8 @@
 import pytest
-from mnip.legal.ingestion import get_chroma_collection, MOCK_LEGAL_CORPUS
-from mnip.legal.retriever import retrieve_chunks
-from mnip.legal.reranker import rerank_chunks
-from mnip.legal.generator import generate_fallback_analysis
+from backend.legal.ingestion import get_chroma_collection, MOCK_LEGAL_CORPUS
+from backend.legal.retriever import retrieve_chunks
+from backend.legal.reranker import rerank_chunks
+from backend.legal.generator import generate_fallback_analysis
 
 def test_legal_pipeline():
     # Ingest if not exists (collection initialization is covered)

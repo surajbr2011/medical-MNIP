@@ -2,10 +2,10 @@ import logging
 from typing import Dict, Any, List
 from neo4j import GraphDatabase
 
-from mnip.config import settings
-from mnip.api.schemas import FHIREpisode
+from backend.config import settings
+from backend.api.schemas import FHIREpisode
 
-logger = logging.getLogger("mnip.graph.pathway_analyzer")
+logger = logging.getLogger("backend.graph.pathway_analyzer")
 
 class PathwayAnalyzer:
     """Orchestrates care pathway graph creation and structural analysis in Neo4j."""

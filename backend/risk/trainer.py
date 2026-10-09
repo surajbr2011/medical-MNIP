@@ -12,11 +12,11 @@ from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_
 import shap
 import mlflow
 
-from mnip.config import settings
-from mnip.risk.features import FEATURE_NAMES
+from backend.config import settings
+from backend.risk.features import FEATURE_NAMES
 
 # Set MLflow experiment
-mlflow.set_experiment("mnip_risk")
+mlflow.set_experiment("backend_risk")
 
 def expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> float:
     """Calculates the Expected Calibration Error (ECE)."""

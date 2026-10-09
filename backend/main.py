@@ -1,28 +1,29 @@
 import logging
+import random
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mnip.config import settings
-from mnip.database.connection import get_db, Base, engine
-from mnip.api.middleware import setup_middlewares
-from mnip.api.schemas import FullMNIPReport, NegligenceResult, RiskScoreResponse, LegalQueryResponse
+from backend.config import settings
+from backend.database.connection import get_db, Base, engine
+from backend.api.middleware import setup_middlewares
+from backend.api.schemas import FullbackendReport, NegligenceResult, RiskScoreResponse, LegalQueryResponse
 
 # Import routers
-from mnip.ingestion.router import router as ingestion_router
-from mnip.detection.router import router as detection_router
-from mnip.risk.router import router as risk_router, fetch_episode_from_db
-from mnip.legal.router import router as legal_router
+from backend.ingestion.router import router as ingestion_router
+from backend.detection.router import router as detection_router
+from backend.risk.router import router as risk_router, fetch_episode_from_db
+from backend.legal.router import router as legal_router
 
 # Import model singletons to initialize them during startup
-from mnip.detection.model import get_detection_model_and_tokenizer, predict_negligence
-from mnip.risk.model import load_risk_ensemble, predict_risk
-from mnip.legal.reranker import get_cross_encoder
-from mnip.legal.ingestion import ingest_corpus
-from mnip.legal.retriever import retrieve_chunks
-from mnip.legal.generator import generate_legal_advice
+from backend.detection.model import get_detection_model_and_tokenizer, predict_negligence
+from backend.risk.model import load_risk_ensemble, predict_risk
+from backend.legal.reranker import get_cross_encoder, rerank_chunks
+from backend.legal.ingestion import ingest_corpus
+from backend.legal.retriever import retrieve_chunks
+from backend.legal.generator import generate_legal_advice
 
-logger = logging.getLogger("mnip.main")
+logger = logging.getLogger("backend.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +56,7 @@ async def lifespan(app: FastAPI):
     logger.info("Platform shutting down.")
 
 app = FastAPI(
-    title="Medical Negligence Intelligence Platform (MNIP)",
+    title="Medical Negligence Intelligence Platform (backend)",
     version="1.0.0",
     description="ABDM-compliant FHIR R4 clinical data ingestion, deep learning-based negligence classification, risk scoring, and legal advice generator.",
     lifespan=lifespan
@@ -74,10 +75,19 @@ app.include_router(legal_router, prefix="/api/v1")
 async def root():
     return {"message": "Welcome to the Medical Negligence Intelligence Platform API."}
 
-@app.get("/api/v1/episodes/{episode_id}/report", response_model=FullMNIPReport, tags=["report"])
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["system"])
+@app.get("/api/v1/health", status_code=status.HTTP_200_OK, tags=["system"])
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Medical Negligence Intelligence Platform API",
+        "version": "1.0.0"
+    }
+
+@app.get("/api/v1/episodes/{episode_id}/report", response_model=FullbackendReport, tags=["report"])
 async def get_episode_report(episode_id: str, db: AsyncSession = Depends(get_db)):
     """
-    Returns a unified MNIP report combining data ingestion structures, NLP negligence detection,
+    Returns a unified backend report combining data ingestion structures, NLP negligence detection,
     risk scoring, and RAG legal recommendations for a given episode_id.
     """
     try:
@@ -135,10 +145,58 @@ async def get_episode_report(episode_id: str, db: AsyncSession = Depends(get_db)
         "observation_count": len(episode.observations)
     }
 
-    return FullMNIPReport(
+    return FullbackendReport(
         episode_id=episode_id,
         ingestion=ingestion_summary,
         detection=detection_res,
         risk=risk_res,
         legal=legal_res
     )
+
+# Global state for mock live analytics
+analytics_state = {
+    "total_incidents": 148,
+    "critical_alerts": 14,
+    "latency": 0.85,
+    "risk_values": [82, 41, 18, 7],
+    "cat_counts": [34, 21, 15, 12, 11, 8, 5, 2],
+    "counts": [10, 8, 12, 14, 9, 11, 15, 13, 10, 16, 12, 18]
+}
+
+@app.get("/api/v1/analytics/live", tags=["analytics"])
+async def get_live_analytics():
+    # Simulate data fluctuation
+    analytics_state["total_incidents"] += random.randint(0, 2)
+    
+    if random.random() > 0.8:
+        analytics_state["critical_alerts"] += 1
+        
+    analytics_state["latency"] = max(0.4, min(1.5, analytics_state["latency"] + random.uniform(-0.1, 0.1)))
+    
+    # Fluctuate pie chart (risk)
+    idx_risk = random.randint(0, 3)
+    analytics_state["risk_values"][idx_risk] += random.randint(0, 1)
+    
+    # Fluctuate bar chart (domains)
+    idx_cat = random.randint(0, 7)
+    analytics_state["cat_counts"][idx_cat] += random.randint(0, 1)
+    
+    # Fluctuate line chart (time series)
+    if random.random() > 0.7:
+        analytics_state["counts"].pop(0)
+        analytics_state["counts"].append(max(0, analytics_state["counts"][-1] + random.randint(-3, 4)))
+        
+    total_risk = sum(analytics_state["risk_values"]) or 1
+    neg_rate = ((analytics_state["risk_values"][2] + analytics_state["risk_values"][3]) / total_risk) * 100
+        
+    return {
+        "kpis": {
+            "total_incidents": analytics_state["total_incidents"],
+            "negligence_rate": round(neg_rate, 1),
+            "critical_alerts": analytics_state["critical_alerts"],
+            "latency": round(analytics_state["latency"], 2)
+        },
+        "risk_values": analytics_state["risk_values"],
+        "cat_counts": analytics_state["cat_counts"],
+        "time_series": analytics_state["counts"]
+    }

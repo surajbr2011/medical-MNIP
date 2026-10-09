@@ -47,4 +47,4 @@ EXPOSE 8000
 EXPOSE 8501
 
 # Default command runs the API, overridden in docker-compose for UI
-CMD ["uvicorn", "mnip.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

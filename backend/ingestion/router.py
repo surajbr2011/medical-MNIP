@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Dict, Any
 
-from mnip.database.connection import get_db
-from mnip.api.schemas import FHIRIngestRequest, FHIRIngestResponse
-from mnip.ingestion.fhir_parser import parse_fhir_bundle_to_episode, parse_fhir_resource
-from mnip.ingestion.deidentifier import deidentify_text
-from mnip.ingestion.models import Patient, Encounter, Observation, MedicationRequest, Procedure, DocumentReference, DeIdAuditLog
+from backend.database.connection import get_db
+from backend.api.schemas import FHIRIngestRequest, FHIRIngestResponse
+from backend.ingestion.fhir_parser import parse_fhir_bundle_to_episode, parse_fhir_resource
+from backend.ingestion.deidentifier import deidentify_text
+from backend.ingestion.models import Patient, Encounter, Observation, MedicationRequest, Procedure, DocumentReference, DeIdAuditLog
 
 # Import fhir.resources models to assist with parsing raw resources in details
 from fhir.resources.patient import Patient as FHIRPatient
@@ -19,7 +19,7 @@ from fhir.resources.medicationrequest import MedicationRequest as FHIRMedication
 from fhir.resources.procedure import Procedure as FHIRProcedure
 from fhir.resources.documentreference import DocumentReference as FHIRDocumentReference
 
-logger = logging.getLogger("mnip.ingestion.router")
+logger = logging.getLogger("backend.ingestion.router")
 router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
 @router.post("/fhir", response_model=FHIRIngestResponse, status_code=status.HTTP_201_CREATED)

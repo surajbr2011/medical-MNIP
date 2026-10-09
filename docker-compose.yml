@@ -62,7 +62,7 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    command: ["uvicorn", "mnip.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   mnip-ui:
     build: .

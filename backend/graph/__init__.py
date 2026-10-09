@@ -1,2 +1,2 @@
 # Graph package init
-from mnip.graph.pathway_analyzer import PathwayAnalyzer
+from backend.graph.pathway_analyzer import PathwayAnalyzer

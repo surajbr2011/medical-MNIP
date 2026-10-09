@@ -9,11 +9,11 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer, TrainingArguments, Trainer
 import mlflow
 
-from mnip.config import settings
-from mnip.detection.model import BioClinicalBERTMultiTaskClassifier, WHO_ICPS_CATEGORIES, device
+from backend.config import settings
+from backend.detection.model import BioClinicalBERTMultiTaskClassifier, WHO_ICPS_CATEGORIES, device
 
 # Set MLflow experiment name
-mlflow.set_experiment("mnip_detection")
+mlflow.set_experiment("backend_detection")
 
 class ClinicalNotesDataset(Dataset):
     def __init__(self, df: pd.DataFrame, tokenizer, max_len: int = 512):
@@ -152,7 +152,7 @@ def train_model():
     model = BioClinicalBERTMultiTaskClassifier("emilyalsentzer/Bio_ClinicalBERT")
     model.to(device)
     
-    output_dir = "models/clinicalbert_mnip"
+    output_dir = "models/clinicalbert_backend"
     os.makedirs(output_dir, exist_ok=True)
     
     training_args = TrainingArguments(

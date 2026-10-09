@@ -1,11 +1,11 @@
 import logging
 from fastapi import APIRouter, HTTPException, status
-from mnip.api.schemas import LegalQueryRequest, LegalQueryResponse
-from mnip.legal.retriever import retrieve_chunks
-from mnip.legal.reranker import rerank_chunks
-from mnip.legal.generator import generate_legal_advice
+from backend.api.schemas import LegalQueryRequest, LegalQueryResponse
+from backend.legal.retriever import retrieve_chunks
+from backend.legal.reranker import rerank_chunks
+from backend.legal.generator import generate_legal_advice
 
-logger = logging.getLogger("mnip.legal.router")
+logger = logging.getLogger("backend.legal.router")
 router = APIRouter(prefix="/legal", tags=["legal"])
 
 @router.post("/query", response_model=LegalQueryResponse)
@@ -17,11 +17,12 @@ async def query_legal_intelligence(payload: LegalQueryRequest):
     2. Rerank down to top 5 using a Cross-Encoder.
     3. Generate structured legal counsel (citations, standard of care, liability assessment) via local Ollama Mistral.
     """
-    incident_description = payload.incident_description.strip()
+    raw_desc = payload.incident_description or payload.query or ""
+    incident_description = raw_desc.strip()
     if not incident_description:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incident description cannot be empty."
+            detail="Incident description or query cannot be empty."
         )
         
     try:

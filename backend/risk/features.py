@@ -2,7 +2,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 from typing import Tuple, Dict, Any, Optional
 
-from mnip.api.schemas import FHIREpisode
+from backend.api.schemas import FHIREpisode
 
 # List of all 31 feature names for ordering
 FEATURE_NAMES = [
