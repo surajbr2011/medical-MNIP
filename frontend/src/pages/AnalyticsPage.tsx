@@ -38,15 +38,15 @@ export default function AnalyticsPage() {
   const weeks = Array.from({ length: 12 }, (_, i) => `Wk ${i - 11}`);
   const lineData = data?.time_series.map((val, i) => ({ name: weeks[i], value: val })) || [];
 
-  const drivers = [
-    "treatment_delay_hours",
-    "vital_sign_deterioration_flag",
-    "consent_documented_flag_missing",
-    "high_risk_drug_flag",
-    "staff_patient_ratio"
-  ];
-  const driverImpact = [0.24, 0.18, 0.15, 0.12, 0.09];
-  const driverData = driverImpact.map((val, idx) => ({ name: drivers[idx], value: val })).reverse();
+  const driverData = data?.top_drivers && data.top_drivers.length > 0
+    ? [...data.top_drivers].reverse()
+    : [
+        { name: "treatment_delay_hours", value: 0.0 },
+        { name: "vital_sign_deterioration_flag", value: 0.0 },
+        { name: "consent_documented_flag_missing", value: 0.0 },
+        { name: "high_risk_drug_flag", value: 0.0 },
+        { name: "staff_patient_ratio", value: 0.0 }
+      ].reverse();
 
   if (isLoading) return <div className="p-8 text-xl">Loading live analytics dashboard...</div>;
   if (isError || !data) return <div className="p-8 text-xl text-red-500">Error connecting to live analytics backend.</div>;

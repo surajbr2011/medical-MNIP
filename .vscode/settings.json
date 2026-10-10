@@ -1,0 +1,38 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}",
+    "${workspaceFolder}/backend"
+  ],
+  "python.analysis.autoSearchPaths": true,
+  "cSpell.words": [
+    "ABDM",
+    "ABHA",
+    "alog",
+    "Bio_ClinicalBERT",
+    "categoryorder",
+    "ChromaDB",
+    "Codeable",
+    "deidentifier",
+    "deidentify",
+    "disp",
+    "documentreference",
+    "FHIR",
+    "FHIREpisode",
+    "Fullbackend",
+    "ICPS",
+    "kpis",
+    "medicationrequest",
+    "meds",
+    "MNIP",
+    "Presidio",
+    "rerank",
+    "reranked",
+    "reranker",
+    "selectinload",
+    "shaps",
+    "UHID",
+    "Viridis",
+    "yaxis"
+  ]
+}

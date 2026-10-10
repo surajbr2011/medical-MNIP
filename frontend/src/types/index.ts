@@ -59,4 +59,5 @@ export interface LiveAnalyticsData {
   risk_values: number[];
   cat_counts: number[];
   time_series: number[];
+  top_drivers?: Array<{ name: string; value: number }>;
 }

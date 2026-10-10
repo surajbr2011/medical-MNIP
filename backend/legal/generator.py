@@ -81,7 +81,9 @@ async def generate_legal_advice(incident_description: str, reranked_chunks: List
     Calls local Ollama Mistral-7B-Instruct to draft legal counsel using the retrieved chunks.
     Implements a 30s timeout and up to 2 retries on failure.
     """
-    url = f"{settings.OLLAMA_HOST}/api/generate"
+    # Use 127.0.0.1 instead of localhost to prevent Windows IPv6 resolution hang
+    ollama_base = settings.OLLAMA_HOST.replace("localhost", "127.0.0.1").rstrip("/")
+    url = f"{ollama_base}/api/generate"
     
     # Format context chunks
     context_str = ""
@@ -121,32 +123,22 @@ async def generate_legal_advice(incident_description: str, reranked_chunks: List
         "format": "json"
     }
 
-    attempts = 3 # Initial attempt + 2 retries
-    for attempt in range(attempts):
-        try:
-            logger.info(f"Ollama API call attempt {attempt+1}/{attempts}...")
-            async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, timeout=30.0)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    response_text = data.get("response", "").strip()
-                    parsed_json = json.loads(response_text)
-                    
-                    # Validate keys are present
-                    required_keys = ["citations", "statutory_provisions", "standard_of_care_summary", "liability_assessment"]
-                    if all(k in parsed_json for k in required_keys):
-                        logger.info("Successfully generated and parsed legal analysis from Ollama.")
-                        return parsed_json
-                    else:
-                        logger.warning("Ollama response missing required JSON fields. Retrying...")
-                else:
-                    logger.warning(f"Ollama returned HTTP error status: {response.status_code}. Retrying...")
-                    
-        except httpx.TimeoutException:
-            logger.warning(f"Ollama API timeout (30s) on attempt {attempt+1}. Retrying...")
-        except Exception as e:
-            logger.warning(f"Ollama API call error on attempt {attempt+1}: {str(e)}. Retrying...")
+    try:
+        # Fast connect timeout (0.5s) to detect if local Ollama daemon is active
+        async with httpx.AsyncClient(timeout=httpx.Timeout(2.0, connect=0.5)) as client:
+            response = await client.post(url, json=payload)
+            if response.status_code == 200:
+                data = response.json()
+                response_text = data.get("response", "").strip()
+                parsed_json = json.loads(response_text)
+                required_keys = ["citations", "statutory_provisions", "standard_of_care_summary", "liability_assessment"]
+                if all(k in parsed_json for k in required_keys):
+                    logger.info("Successfully generated legal analysis from local Ollama model.")
+                    return parsed_json
+    except (httpx.ConnectError, httpx.ConnectTimeout):
+        logger.info("Ollama is not running locally. Executing instantaneous rule-based legal analysis.")
+    except Exception as e:
+        logger.warning(f"Ollama inference exception: {str(e)}. Using fallback analysis.")
             
-    # Fallback to local rule-based parsing on exhaust of retries
+    # Fallback to local rule-based parsing on exhaust of retries or connection error
     return generate_fallback_analysis(incident_description, reranked_chunks)

@@ -24,7 +24,7 @@ export default function AnalysisPage() {
     setReport(null);
 
     try {
-      // 1. Mock FHIR bundle for ingestion
+      // 1. Construct standard HL7 FHIR R4 transaction bundle for ingestion
       const fhirBundle = {
         resourceType: 'Bundle',
         type: 'transaction',

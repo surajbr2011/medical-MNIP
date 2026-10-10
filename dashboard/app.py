@@ -10,16 +10,16 @@ import plotly.graph_objects as go
 import streamlit as st
 from datetime import datetime, timedelta
 
-# Ensure parent directory is in PYTHONPATH so mnip package is resolvable
+# Ensure parent directory is in PYTHONPATH so backend package is resolvable
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import config and database helpers for direct stats reporting
-from mnip.config import settings
-from mnip.api.schemas import FHIREpisode
-from mnip.detection.model import WHO_ICPS_CATEGORIES
+from backend.config import settings
+from backend.api.schemas import FHIREpisode
+from backend.detection.model import WHO_ICPS_CATEGORIES
 
-# Determine API URL (Docker context vs. local development)
-API_URL = "http://localhost:8000"
+# Determine API URL (environment variable or default localhost)
+API_URL = os.getenv("API_HOST", "http://localhost:8000").rstrip("/")
 
 # Set Page Config
 st.set_page_config(
@@ -121,7 +121,7 @@ if page == "Page 1 - Analyse Incident":
                     except Exception as e:
                         st.error(f"Failed to read uploaded JSON: {str(e)}")
                 
-                # Mock a FHIR bundle for processing if not provided
+                # Construct standard FHIR R4 transaction bundle from entered clinical note if file not uploaded
                 if not fhir_bundle:
                     fhir_bundle = {
                         "resourceType": "Bundle",
@@ -293,6 +293,10 @@ if page == "Page 1 - Analyse Incident":
                                         st.write(f"*Court:* {citation.get('court')} | *Relevance:* {citation.get('relevance')}")
                                         st.write("---")
 
+                except httpx.ConnectError:
+                    st.error(f"⚠️ Cannot connect to the MNIP Backend API at `{API_URL}`.")
+                    st.warning("The backend server is not running on port 8000. Open a separate terminal and start it using:")
+                    st.code("uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000")
                 except Exception as ex:
                     st.error(f"Inference pipeline execution error: {str(ex)}")
 
@@ -333,38 +337,63 @@ elif page == "Page 2 - Legal Search":
                         for prov in data.get("statutory_provisions", []):
                             st.markdown(f"⚖️ {prov}")
                             
+                except httpx.ConnectError:
+                    st.error(f"⚠️ Cannot connect to the MNIP Backend API at `{API_URL}`.")
+                    st.warning("The backend server is not running on port 8000. Open a separate terminal and start it using:")
+                    st.code("uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000")
                 except Exception as ex:
                     st.error(f"Failed to query legal service: {str(ex)}")
 
 elif page == "Page 3 - Analytics Dashboard":
     st.title("📊 Platform Executive Analytics")
-    st.write("Aggregated visual reporting on negligence incidents, risks, and trends.")
+    st.write("Real-time aggregated visual reporting on negligence incidents, risks, and trends from ingested clinical data.")
     
-    # 1. Fetch some dummy data for visualization
-    # We will generate mock data locally if database table counts are small
-    np.random.seed(101)
+    # Fetch live analytics from the backend API
+    analytics_data = None
+    try:
+        with httpx.Client(timeout=4.0) as client:
+            resp = client.get(f"{API_URL}/api/v1/analytics/live")
+            if resp.status_code == 200:
+                analytics_data = resp.json()
+    except Exception:
+        pass
+        
+    if not analytics_data:
+        from backend.analytics import get_live_metrics
+        analytics_data = get_live_metrics()
+        
+    kpis = analytics_data.get("kpis", {})
+    total_incidents = kpis.get("total_incidents", 0)
+    negligence_rate = kpis.get("negligence_rate", 0.0)
+    critical_alerts = kpis.get("critical_alerts", 0)
+    latency = kpis.get("latency", 0.0)
     
-    # Mocking aggregate reports
-    st.subheader("Incidents Negligence Analytics")
+    st.subheader("Live Incidents Negligence Analytics")
     
     # Column metrics
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Incidents Processed", "148", "+12 this week")
-    m2.metric("Negligence Confirmed Rate", "18.2%", "-1.5%")
-    m3.metric("Critical Risk Alerts", "14", "+3")
-    m4.metric("Avg Latency (seconds)", "0.85s", "-0.04s")
+    m1.metric("Total Incidents Processed", str(total_incidents))
+    m2.metric("Negligence Confirmed Rate", f"{negligence_rate}%")
+    m3.metric("Critical Risk Alerts", str(critical_alerts))
+    m4.metric("Avg Latency (seconds)", f"{latency}s")
     
     st.markdown("---")
+    
+    if total_incidents == 0:
+        st.info("ℹ️ No clinical incidents processed yet. Analyze a clinical note or upload a FHIR bundle on the 'Incident Analysis & Pipeline' tab to see live aggregated charts.")
     
     g_col1, g_col2 = st.columns([1, 1])
     
     with g_col1:
         # 1. Risk Level Distribution (Plotly Pie)
-        st.markdown("##### Risk Level Distribution")
+        st.markdown("##### Risk Level Distribution (Live)")
         risk_labels = ["Minimal", "Moderate", "High", "Critical"]
-        risk_values = [82, 41, 18, 7]
+        risk_values = analytics_data.get("risk_values", [0, 0, 0, 0])
+        
+        # Avoid empty pie render error if total is 0
+        pie_values = risk_values if sum(risk_values) > 0 else [1, 0, 0, 0]
         fig_pie = px.pie(
-            values=risk_values,
+            values=pie_values,
             names=risk_labels,
             color=risk_labels,
             color_discrete_map={
@@ -379,8 +408,8 @@ elif page == "Page 3 - Analytics Dashboard":
 
     with g_col2:
         # 2. Incidents by domain bar chart
-        st.markdown("##### Flagged Incidents by WHO ICPS Domain")
-        cat_counts = [34, 21, 15, 12, 11, 8, 5, 2]
+        st.markdown("##### Flagged Incidents by WHO ICPS Domain (Live)")
+        cat_counts = analytics_data.get("cat_counts", [0] * len(WHO_ICPS_CATEGORIES))
         fig_bar = px.bar(
             x=cat_counts,
             y=WHO_ICPS_CATEGORIES,
@@ -401,7 +430,7 @@ elif page == "Page 3 - Analytics Dashboard":
         # 3. Time Series: incidents per week (last 12 weeks)
         st.markdown("##### Ingested Incidents Per Week (Last 12 Weeks)")
         weeks = [f"Wk {i-11}" for i in range(12)]
-        counts = [10, 8, 12, 14, 9, 11, 15, 13, 10, 16, 12, 18]
+        counts = analytics_data.get("time_series", [0] * 12)
         
         fig_time = px.line(
             x=weeks,
@@ -414,21 +443,16 @@ elif page == "Page 3 - Analytics Dashboard":
         
     with t_col2:
         # 4. Top 5 Risk Drivers
-        st.markdown("##### Top 5 Negligence Risk Drivers Across All Incidents")
-        drivers = [
-            "treatment_delay_hours",
-            "vital_sign_deterioration_flag",
-            "consent_documented_flag_missing",
-            "high_risk_drug_flag",
-            "staff_patient_ratio"
-        ]
-        driver_impact = [0.24, 0.18, 0.15, 0.12, 0.09]
+        st.markdown("##### Top Negligence Risk Drivers Across Incidents")
+        raw_drivers = analytics_data.get("top_drivers", [])
+        driver_names = [d.get("name", "") for d in raw_drivers]
+        driver_impact = [d.get("value", 0.0) for d in raw_drivers]
         
         fig_drivers = px.bar(
             x=driver_impact,
-            y=drivers,
+            y=driver_names,
             orientation="h",
-            labels={"x": "Mean |SHAP Impact|", "y": "Feature"},
+            labels={"x": "Proportion / SHAP Impact", "y": "Feature"},
             color=driver_impact,
             color_continuous_scale="Reds",
             template="plotly_dark"

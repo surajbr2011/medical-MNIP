@@ -5,7 +5,7 @@ from backend.config import settings
 class Base(DeclarativeBase):
     pass
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False)
+engine = create_async_engine(settings.DATABASE_URL, echo=False, connect_args={"timeout": 2.0})
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,

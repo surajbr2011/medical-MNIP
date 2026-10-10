@@ -1,8 +1,10 @@
 import logging
-import random
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.analytics import record_incident, get_live_metrics
 
 from backend.config import settings
 from backend.database.connection import get_db, Base, engine
@@ -31,9 +33,16 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Medical Negligence Intelligence Platform...")
     
     # 1. Initialize databases and create tables if needed
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database schemas verified/created.")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schemas verified/created.")
+    except Exception as e:
+        logger.warning(
+            f"PostgreSQL connection failed ({str(e)}). "
+            f"Database features will be unavailable until PostgreSQL is running on port 5432 "
+            f"(Start via Docker: 'docker compose up -d postgres' or local PostgreSQL service)."
+        )
     
     # 2. Ingest legal precedents to ChromaDB vector store
     try:
@@ -90,6 +99,7 @@ async def get_episode_report(episode_id: str, db: AsyncSession = Depends(get_db)
     Returns a unified backend report combining data ingestion structures, NLP negligence detection,
     risk scoring, and RAG legal recommendations for a given episode_id.
     """
+    start_time = time.time()
     try:
         # 1. Fetch structured episode details
         episode = await fetch_episode_from_db(episode_id, db)
@@ -145,6 +155,21 @@ async def get_episode_report(episode_id: str, db: AsyncSession = Depends(get_db)
         "observation_count": len(episode.observations)
     }
 
+    # Record actual incident analysis for real production analytics
+    latency = round(time.time() - start_time, 3)
+    try:
+        record_incident(
+            episode_id=episode_id,
+            is_negligent=bool(detection_res.negligent) if detection_res else False,
+            risk_level=risk_res.risk_level if risk_res else "Minimal",
+            risk_score=risk_res.risk_score if risk_res else 0.0,
+            domain_probabilities=detection_res.categories if detection_res else {},
+            top_drivers=risk_res.top_drivers if risk_res else [],
+            latency=latency
+        )
+    except Exception as log_err:
+        logger.warning(f"Failed to log live analytics record: {str(log_err)}")
+
     return FullbackendReport(
         episode_id=episode_id,
         ingestion=ingestion_summary,
@@ -153,50 +178,7 @@ async def get_episode_report(episode_id: str, db: AsyncSession = Depends(get_db)
         legal=legal_res
     )
 
-# Global state for mock live analytics
-analytics_state = {
-    "total_incidents": 148,
-    "critical_alerts": 14,
-    "latency": 0.85,
-    "risk_values": [82, 41, 18, 7],
-    "cat_counts": [34, 21, 15, 12, 11, 8, 5, 2],
-    "counts": [10, 8, 12, 14, 9, 11, 15, 13, 10, 16, 12, 18]
-}
-
 @app.get("/api/v1/analytics/live", tags=["analytics"])
 async def get_live_analytics():
-    # Simulate data fluctuation
-    analytics_state["total_incidents"] += random.randint(0, 2)
-    
-    if random.random() > 0.8:
-        analytics_state["critical_alerts"] += 1
-        
-    analytics_state["latency"] = max(0.4, min(1.5, analytics_state["latency"] + random.uniform(-0.1, 0.1)))
-    
-    # Fluctuate pie chart (risk)
-    idx_risk = random.randint(0, 3)
-    analytics_state["risk_values"][idx_risk] += random.randint(0, 1)
-    
-    # Fluctuate bar chart (domains)
-    idx_cat = random.randint(0, 7)
-    analytics_state["cat_counts"][idx_cat] += random.randint(0, 1)
-    
-    # Fluctuate line chart (time series)
-    if random.random() > 0.7:
-        analytics_state["counts"].pop(0)
-        analytics_state["counts"].append(max(0, analytics_state["counts"][-1] + random.randint(-3, 4)))
-        
-    total_risk = sum(analytics_state["risk_values"]) or 1
-    neg_rate = ((analytics_state["risk_values"][2] + analytics_state["risk_values"][3]) / total_risk) * 100
-        
-    return {
-        "kpis": {
-            "total_incidents": analytics_state["total_incidents"],
-            "negligence_rate": round(neg_rate, 1),
-            "critical_alerts": analytics_state["critical_alerts"],
-            "latency": round(analytics_state["latency"], 2)
-        },
-        "risk_values": analytics_state["risk_values"],
-        "cat_counts": analytics_state["cat_counts"],
-        "time_series": analytics_state["counts"]
-    }
+    """Returns actual real-time incident analytics without synthetic or mock data."""
+    return get_live_metrics()
