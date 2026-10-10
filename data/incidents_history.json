@@ -98,5 +98,55 @@
       "top_category"
     ],
     "latency": 3.372
+  },
+  {
+    "episode_id": "enc-temp",
+    "timestamp": "2026-10-10T07:26:02.971700",
+    "is_negligent": false,
+    "risk_level": "Minimal",
+    "risk_score": 0.2222,
+    "domain_probabilities": {
+      "Clinical process/procedure": 0.5404788255691528,
+      "Medical device/equipment": 0.5167876482009888,
+      "Documentation": 0.47130802273750305,
+      "Medication/IV fluids": 0.49086540937423706,
+      "Clinical administration": 0.5037946701049805,
+      "Healthcare-associated infection": 0.496647447347641,
+      "Resources/organizational": 0.5208482146263123,
+      "Nutrition/systemic functions": 0.45902568101882935
+    },
+    "top_drivers": [
+      "vital_sign_deterioration_flag",
+      "high_risk_drug_flag",
+      "documentation_completeness_score",
+      "treatment_delay_hours",
+      "top_category"
+    ],
+    "latency": 12.791
+  },
+  {
+    "episode_id": "enc-temp",
+    "timestamp": "2026-10-10T07:28:37.501500",
+    "is_negligent": false,
+    "risk_level": "Minimal",
+    "risk_score": 0.2222,
+    "domain_probabilities": {
+      "Clinical process/procedure": 0.5191669464111328,
+      "Medical device/equipment": 0.5110813975334167,
+      "Documentation": 0.4764916002750397,
+      "Medication/IV fluids": 0.49030524492263794,
+      "Clinical administration": 0.5074564814567566,
+      "Healthcare-associated infection": 0.4951656460762024,
+      "Resources/organizational": 0.5242822766304016,
+      "Nutrition/systemic functions": 0.4637185335159302
+    },
+    "top_drivers": [
+      "vital_sign_deterioration_flag",
+      "high_risk_drug_flag",
+      "documentation_completeness_score",
+      "treatment_delay_hours",
+      "top_category"
+    ],
+    "latency": 3.186
   }
 ]

@@ -114,11 +114,28 @@ def predict_negligence(text: str) -> NegligenceResult:
     # Get token attributions (gradient explanations)
     token_attributions = get_token_attributions(model, tokenizer, text)
     
+    # 1. Defensible confidence calculation: probability of the assigned class
+    negligent_flag = bool(negligence_prob >= 0.50)
+    class_confidence = negligence_prob if negligent_flag else (1.0 - negligence_prob)
+    
+    # 2. Evidence sufficiency classification (Equivocal zone around 0.5 decision boundary)
+    if 0.40 <= negligence_prob <= 0.60:
+        screening_status = "Equivocal / Insufficient Evidence"
+    elif negligent_flag:
+        screening_status = "Flagged for Clinical Review"
+    else:
+        screening_status = "Unflagged (Low Suspicion)"
+        
     return NegligenceResult(
-        negligent=negligence_prob >= 0.5,
-        confidence=negligence_prob,
+        negligent=negligent_flag,
+        confidence=round(class_confidence, 4),
         categories=categories_dict,
-        token_attributions=token_attributions
+        token_attributions=token_attributions,
+        status=screening_status,
+        decision_threshold=0.50,
+        screening_probability=round(negligence_prob, 4),
+        disclaimer="AI-assisted clinical screening prioritization tool. Not an autonomous legal determination of medical negligence.",
+        model_version="Bio_ClinicalBERT-v1.0"
     )
 
 def batch_predict_negligence(texts: List[str]) -> List[NegligenceResult]:

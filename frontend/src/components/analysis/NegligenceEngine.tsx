@@ -39,36 +39,54 @@ export default function NegligenceEngine({ detection }: NegligenceEngineProps) {
   return (
     <div className="space-y-6">
       <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-xl">
-        <h2 className="text-xl font-semibold mb-4">Negligence Detection Engine</h2>
+        <h2 className="text-xl font-semibold mb-2">2. Negligence Screening Engine (Bio_ClinicalBERT)</h2>
         
-        <div className={`p-4 rounded-lg border mb-6 ${
-          detection.negligent 
-            ? 'bg-red-900/30 border-red-500/50 text-red-400' 
-            : 'bg-green-900/30 border-green-500/50 text-green-400'
-        }`}>
-          <span className="font-bold">
-            Negligence Flagged: {detection.negligent ? 'TRUE' : 'FALSE'}
-          </span>
-          <span className="ml-2">
-            (Confidence: {(detection.confidence * 100).toFixed(1)}%)
-          </span>
-        </div>
+        {(() => {
+          const status = detection.status || (detection.negligent ? "Flagged for Clinical Review" : "Unflagged (Low Suspicion)");
+          const isEquivocal = status.includes("Equivocal");
+          const isFlagged = detection.negligent;
+
+          const statusStyle = isEquivocal
+            ? "bg-amber-950/40 border-amber-500/50 text-amber-300"
+            : isFlagged
+              ? "bg-rose-950/40 border-rose-500/50 text-rose-300"
+              : "bg-sky-950/40 border-sky-500/50 text-sky-300";
+
+          return (
+            <div className={`p-4 rounded-lg border mb-4 ${statusStyle}`}>
+              <div className="font-semibold text-base mb-1">
+                Screening Status: {status}
+              </div>
+              <div className="text-sm opacity-90">
+                Class Confidence: {(detection.confidence * 100).toFixed(1)}% | Raw Probability: {((detection.screening_probability ?? detection.confidence) * 100).toFixed(1)}% (Threshold: {(detection.decision_threshold ?? 0.50).toFixed(2)})
+              </div>
+            </div>
+          );
+        })()}
+
+        <p className="text-xs text-gray-400 mb-6 bg-[#0f111a] p-3 rounded border border-[#30363d]">
+          ⚠️ <strong>Governance Notice:</strong> AI-assisted screening prioritization tool. Designed for clinical triage, not an autonomous legal determination of medical negligence.
+        </p>
         
-        <h3 className="font-semibold mb-2">WHO ICPS Category Breakdown</h3>
+        <h3 className="font-semibold mb-1 text-sm text-gray-200">WHO ICPS Multi-Domain Breakdown</h3>
+        <p className="text-xs text-gray-400 mb-2">Independent sigmoid probabilities per domain (non-mutually exclusive). Incidents may involve multiple interacting categories.</p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart layout="vertical" data={chartData}>
               <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#8b949e', fontSize: 12 }} />
+              <YAxis dataKey="name" type="category" width={110} tick={{ fill: '#8b949e', fontSize: 11 }} />
               <Tooltip contentStyle={{ backgroundColor: '#161b22', borderColor: '#30363d' }} />
-              <Bar dataKey="value" fill="#8957e5" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="value" fill="#238636" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
       
       <div className="bg-[#161b22] border border-[#30363d] p-6 rounded-xl">
-        <h2 className="text-xl font-semibold mb-4">Explainability: Token Attribution Heatmap</h2>
+        <h2 className="text-xl font-semibold mb-1">Explainability: Deep Learning Token Attribution</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Signed token attribution via <strong>Input × Gradient</strong> on Bio_ClinicalBERT token embeddings. Highlights indicate vocabulary associated with the statistical classification, not proof of clinical fault.
+        </p>
         <div className="bg-[#1e1e1e] p-4 rounded-lg border border-[#333] leading-loose">
           {detection.token_attributions && detection.token_attributions.length > 0 
             ? renderTokenHeatmap(detection.token_attributions) 

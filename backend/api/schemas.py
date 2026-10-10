@@ -31,6 +31,11 @@ class NegligenceResult(BaseModel):
     confidence: float
     categories: Dict[str, float]
     token_attributions: List[Dict[str, Any]]
+    status: Optional[str] = "Screened"
+    decision_threshold: Optional[float] = 0.50
+    screening_probability: Optional[float] = None
+    disclaimer: Optional[str] = "AI-assisted screening prioritization tool. Not an autonomous legal determination of medical negligence."
+    model_version: Optional[str] = "Bio_ClinicalBERT-v1.0"
 
 # --- Module 3: Risk Scoring ---
 class RiskScoreRequest(BaseModel):
@@ -42,6 +47,9 @@ class RiskScoreResponse(BaseModel):
     shap_values: Dict[str, float]
     narrative: str
     top_drivers: List[str]
+    baseline_risk: Optional[float] = 0.014
+    explanation_scale: Optional[str] = "native log-odds contribution"
+    disclaimer: Optional[str] = "Statistical risk associations based on clinical features; not proof of clinical causation or negligence."
 
 # --- Module 4: Legal RAG ---
 class LegalQueryRequest(BaseModel):
@@ -54,6 +62,7 @@ class LegalQueryResponse(BaseModel):
     statutory_provisions: List[str]
     standard_of_care_summary: str
     liability_assessment: str
+    legal_disclaimer: Optional[str] = "Informational legal research summary based on Indian Supreme Court case law. Requires independent qualified legal verification."
 
 # --- Combined Episode Report ---
 class FullbackendReport(BaseModel):

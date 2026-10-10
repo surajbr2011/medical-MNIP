@@ -1,75 +1,82 @@
 import torch
+import logging
 from typing import List, Dict, Any
+
+logger = logging.getLogger("backend.detection.explainer")
 
 def get_token_attributions(model, tokenizer, text: str) -> List[Dict[str, Any]]:
     """
-    Computes gradient-based attributions for each token in the input text
-    with respect to the negligence class logit (index 8).
+    Computes signed Input x Gradient attributions for each clinical token with respect
+    to the negligence screening logit (index 8).
+    
+    Tokens with positive attributions contributed toward the model flagging potential negligence;
+    tokens with negative attributions contributed against flagging.
+    Special tokens ([CLS], [SEP], [PAD]) are filtered out to prevent pooling artifact inflation.
     """
-    # 1. Tokenize text
-    inputs = tokenizer(
-        text,
-        max_length=512,
-        padding="max_length",
-        truncation=True,
-        return_tensors="pt"
-    )
-    
-    input_ids = inputs["input_ids"]
-    attention_mask = inputs["attention_mask"]
-    
-    # 2. Get device of model
-    device = next(model.parameters()).device
-    input_ids = input_ids.to(device)
-    attention_mask = attention_mask.to(device)
-    
-    # 3. Get input embeddings
-    # In HuggingFace BERT, word embeddings are at model.bert.embeddings.word_embeddings
-    word_embeddings = model.bert.embeddings.word_embeddings(input_ids).clone().detach()
-    word_embeddings.requires_grad = True
-    
-    # 4. Forward pass
-    # Temporarily enable grads just for this computation
-    with torch.enable_grad():
-        logits = model(inputs_embeds=word_embeddings, attention_mask=attention_mask)
+    if not text or not text.strip():
+        return []
+
+    try:
+        # 1. Tokenize text with attention mask
+        inputs = tokenizer(
+            text.strip(),
+            max_length=512,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt"
+        )
         
-        # Target logit index 8 is the binary negligence prediction
-        negligence_logit = logits[0, 8]
+        input_ids = inputs["input_ids"]
+        attention_mask = inputs["attention_mask"]
         
-        # 5. Backward pass to compute gradients
-        model.zero_grad()
-        negligence_logit.backward()
+        device = next(model.parameters()).device
+        input_ids = input_ids.to(device)
+        attention_mask = attention_mask.to(device)
         
-        # 6. Extract gradients w.r.t. embeddings
-        grads = word_embeddings.grad  # Shape: [1, seq_len, 768]
+        # 2. Extract input word embeddings and enable gradient computation
+        word_embeddings = model.bert.embeddings.word_embeddings(input_ids).clone().detach()
+        word_embeddings.requires_grad = True
         
-    if grads is None:
-        # Fallback to zero attributions if gradients are not computed
-        tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
-        return [{"token": t, "attribution": 0.0} for t in tokens if t != "[PAD]"]
+        # 3. Forward pass targeting negligence logit (index 8)
+        model.eval()
+        with torch.enable_grad():
+            logits = model(inputs_embeds=word_embeddings, attention_mask=attention_mask)
+            negligence_logit = logits[0, 8]
+            model.zero_grad()
+            negligence_logit.backward()
+            grads = word_embeddings.grad
+            
+        if grads is None:
+            return []
+            
+        # 4. Compute signed Input x Gradient attribution per token: sum(embed * grad) across embedding dimensions
+        input_x_grad = (word_embeddings[0] * grads[0]).sum(dim=-1).detach().cpu().numpy() # Shape [seq_len]
         
-    # Calculate attribution score per token: L2 norm of gradient
-    # Shape: [seq_len]
-    attribution_scores = torch.norm(grads[0], dim=-1)
-    
-    # Normalize scores between 0 and 1
-    max_score = attribution_scores.max().item()
-    if max_score > 0:
-        attribution_scores = (attribution_scores / max_score).tolist()
-    else:
-        attribution_scores = attribution_scores.tolist()
+        tokens = tokenizer.convert_ids_to_tokens(input_ids[0].cpu().numpy())
+        seq_length = int(attention_mask[0].sum().item()) # Only actual tokens, ignoring padding
         
-    # Convert token IDs back to strings
-    tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
-    
-    # Filter out [PAD] tokens to reduce size of payload
-    attributions = []
-    for token, score in zip(tokens, attribution_scores):
-        if token == "[PAD]":
-            continue
-        attributions.append({
-            "token": token,
-            "attribution": float(score)
-        })
+        # 5. Normalize signed scores relative to maximum absolute contribution
+        valid_scores = input_x_grad[:seq_length]
+        max_abs = float(np_max := max(abs(float(s)) for s in valid_scores)) if len(valid_scores) > 0 else 0.0
         
-    return attributions
+        attributions = []
+        for idx in range(seq_length):
+            tok = tokens[idx]
+            # Exclude BERT structural markers
+            if tok in ["[CLS]", "[SEP]", "[PAD]"]:
+                continue
+                
+            raw_val = float(input_x_grad[idx])
+            norm_val = round(raw_val / max_abs, 4) if max_abs > 1e-8 else 0.0
+            
+            attributions.append({
+                "token": tok,
+                "attribution": norm_val,
+                "direction": "positive" if norm_val > 0 else "negative" if norm_val < 0 else "neutral"
+            })
+            
+        return attributions
+        
+    except Exception as e:
+        logger.error(f"Error computing token attributions: {str(e)}")
+        return []

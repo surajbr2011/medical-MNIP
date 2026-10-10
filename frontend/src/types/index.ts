@@ -17,6 +17,11 @@ export interface NegligenceResult {
   confidence: number;
   categories: Record<string, number>;
   token_attributions: TokenAttribution[];
+  status?: string;
+  decision_threshold?: number;
+  screening_probability?: number;
+  disclaimer?: string;
+  model_version?: string;
 }
 
 export interface RiskScoreResponse {
@@ -25,6 +30,9 @@ export interface RiskScoreResponse {
   shap_values: Record<string, number>;
   narrative: string;
   top_drivers: string[];
+  baseline_risk?: number;
+  explanation_scale?: string;
+  disclaimer?: string;
 }
 
 export interface Citation {
@@ -32,6 +40,7 @@ export interface Citation {
   year: number;
   court: string;
   relevance: string;
+  source_url?: string;
 }
 
 export interface LegalQueryResponse {
@@ -39,6 +48,7 @@ export interface LegalQueryResponse {
   statutory_provisions: string[];
   standard_of_care_summary: string;
   liability_assessment: string;
+  legal_disclaimer?: string;
 }
 
 export interface FullBackendReport {

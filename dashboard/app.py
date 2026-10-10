@@ -192,42 +192,40 @@ if page == "Page 1 - Analyse Incident":
                             
                             # Left Column: Risk Gauge & SHAP
                             with res_col_l:
-                                st.subheader("Risk Assessment Summary")
+                                st.subheader("1. Clinical Risk Assessment Summary")
                                 risk = report_data.get("risk")
                                 if risk:
                                     risk_score = risk.get("risk_score", 0.0)
                                     risk_level = risk.get("risk_level", "Minimal")
+                                    baseline_risk = risk.get("baseline_risk", 0.014)
+                                    explanation_scale = risk.get("explanation_scale", "native log-odds contribution")
                                     
-                                    # st.metric & Badge
-                                    st.metric(label="Calibrated Negligence Risk", value=f"{risk_score:.1%}")
-                                    if risk_level == "Minimal":
-                                        st.success(f"Risk Severity Level: {risk_level}")
-                                    elif risk_level == "Moderate":
-                                        st.info(f"Risk Severity Level: {risk_level}")
-                                    elif risk_level == "High":
-                                        st.warning(f"Risk Severity Level: {risk_level}")
-                                    else:
-                                        st.error(f"Risk Severity Level: {risk_level}")
+                                    # Metric and Context
+                                    m_col1, m_col2 = st.columns(2)
+                                    with m_col1:
+                                        st.metric(label="Calibrated Negligence Risk", value=f"{risk_score:.1%}")
+                                    with m_col2:
+                                        st.metric(label="Clinical Baseline Prior", value=f"{baseline_risk:.1%}")
                                         
-                                    st.write(f"**Clinical Narrative:** {risk.get('narrative', '')}")
+                                    st.caption(f"**Risk Severity Tier:** {risk_level} | **Scale:** {explanation_scale}")
+                                    st.info(f"📋 **Clinical Narrative:** {risk.get('narrative', '')}")
                                     
                                     # Plotly SHAP Chart
-                                    st.markdown("##### Top Risk Drivers (SHAP Value)")
+                                    st.markdown("##### Feature Contributions to Log-Odds (SHAP TreeExplainer)")
+                                    st.caption("Values reflect marginal shift in model log-odds relative to expected baseline. Positive shifts increase log-odds; negative shifts decrease log-odds.")
                                     shaps = risk.get("shap_values", {})
-                                    # Sort and take top 8
                                     sorted_shaps = sorted(shaps.items(), key=lambda x: abs(x[1]), reverse=True)[:8]
                                     if sorted_shaps:
-                                        fig_df = pd.DataFrame(sorted_shaps, columns=["Feature", "SHAP Value"])
-                                        # Sort ascending for plotting
-                                        fig_df = fig_df.sort_values(by="SHAP Value")
+                                        fig_df = pd.DataFrame(sorted_shaps, columns=["Feature", "Log-Odds Contribution"])
+                                        fig_df = fig_df.sort_values(by="Log-Odds Contribution")
                                         
                                         fig = px.bar(
                                             fig_df,
-                                            x="SHAP Value",
+                                            x="Log-Odds Contribution",
                                             y="Feature",
                                             orientation="h",
-                                            title="SHAP Feature Importance (Ensemble Stacking)",
-                                            color="SHAP Value",
+                                            title="Feature Marginal Impact (Log-Odds Margin)",
+                                            color="Log-Odds Contribution",
                                             color_continuous_scale=px.colors.diverging.RdBu_r,
                                             template="plotly_dark"
                                         )
@@ -238,19 +236,28 @@ if page == "Page 1 - Analyse Incident":
 
                             # Right Column: Negligence Detection
                             with res_col_r:
-                                st.subheader("Negligence Detection Engine")
+                                st.subheader("2. Negligence Screening Engine (Bio_ClinicalBERT)")
                                 detect = report_data.get("detection")
                                 if detect:
                                     neg = detect.get("negligent", False)
                                     conf = detect.get("confidence", 0.0)
+                                    screening_prob = detect.get("screening_probability", conf)
+                                    status = detect.get("status", "Screening Complete")
+                                    decision_thresh = detect.get("decision_threshold", 0.50)
                                     
-                                    if neg:
-                                        st.error(f"Negligence Flagged: TRUE (Confidence: {conf:.1%})")
+                                    # Neutral, professional status reporting (avoids guilty/innocent badges)
+                                    if status == "Equivocal / Insufficient Evidence":
+                                        st.warning(f"⚖️ **Screening Status:** {status}\n\n*Class Confidence:* {conf:.1%} | *Raw Probability:* {screening_prob:.1%} (Threshold: {decision_thresh:.2f})")
+                                    elif neg:
+                                        st.error(f"⚠️ **Screening Status:** {status}\n\n*Class Confidence:* {conf:.1%} | *Raw Probability:* {screening_prob:.1%} (Threshold: {decision_thresh:.2f})")
                                     else:
-                                        st.success(f"Negligence Flagged: FALSE (Confidence: {conf:.1%})")
+                                        st.success(f"ℹ️ **Screening Status:** {status}\n\n*Class Confidence:* {conf:.1%} | *Raw Probability:* {screening_prob:.1%} (Threshold: {decision_thresh:.2f})")
                                         
+                                    st.caption("⚠️ **Governance Notice:** AI-assisted clinical review prioritization tool. Does not constitute an autonomous medical or legal determination.")
+                                    
                                     # Category breakdown
-                                    st.markdown("##### WHO ICPS Category Breakdown")
+                                    st.markdown("##### WHO ICPS Multi-Domain Breakdown")
+                                    st.caption("Independent sigmoid probabilities per domain (non-mutually exclusive). Incidents may span multiple domains.")
                                     cats = detect.get("categories", {})
                                     cat_df = pd.DataFrame(list(cats.items()), columns=["Category", "Probability"])
                                     cat_df = cat_df.sort_values(by="Probability", ascending=True)
@@ -261,9 +268,9 @@ if page == "Page 1 - Analyse Incident":
                                         y="Category",
                                         orientation="h",
                                         color="Probability",
-                                        color_continuous_scale="Viridis",
+                                        color_continuous_scale="Tealgrn",
                                         template="plotly_dark"
-                                        )
+                                    )
                                     fig_cat.update_layout(margin=dict(l=20, r=20, t=30, b=20), height=300)
                                     st.plotly_chart(fig_cat, use_container_width=True)
                                 else:
@@ -274,23 +281,29 @@ if page == "Page 1 - Analyse Incident":
                             
                             # Heatmap
                             if detect and detect.get("token_attributions"):
-                                with st.expander("Explainability: Token Attribution Heatmap (Deep Learning Highlight)"):
-                                    st.write("Gradient attribution heatmap on Bio_ClinicalBERT token embeddings. Red tokens indicate high impact on negligence flagging.")
+                                with st.expander("Explainability: Deep Learning Token Attribution (Bio_ClinicalBERT)"):
+                                    st.write("Signed token attribution computed via **Input × Gradient** on token embeddings. Darker colored tokens represent significant contextual association with the screening decision. Note: Highlights reflect statistical model associations, not clinical fault.")
                                     heatmap_html = render_token_heatmap(detect["token_attributions"])
                                     st.markdown(f'<div style="background-color: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #333; line-height: 2;">{heatmap_html}</div>', unsafe_allow_html=True)
                                     
                             # Legal RAG
                             legal = report_data.get("legal")
                             if legal:
-                                with st.expander("Legal Intelligence Output (citations + summary)"):
+                                with st.expander("Legal Intelligence & Case Law Precedents (Indian Medico-Legal Framework)"):
                                     st.subheader("Standard of Care & Precedents")
                                     st.write(f"**Standard of Care Summary:** {legal.get('standard_of_care_summary', '')}")
                                     st.write(f"**Liability Assessment:** {legal.get('liability_assessment', '')}")
                                     
-                                    st.markdown("##### Relevant Legal Precedents")
+                                    disclaimer = legal.get("legal_disclaimer") or legal.get("disclaimer")
+                                    if disclaimer:
+                                        st.warning(f"⚖️ **Legal Disclaimer:** {disclaimer}")
+                                        
+                                    st.markdown("##### Authoritative Supreme Court Precedents")
                                     for citation in legal.get("citations", []):
                                         st.markdown(f"📖 **{citation.get('case_name')}** ({citation.get('year')})")
                                         st.write(f"*Court:* {citation.get('court')} | *Relevance:* {citation.get('relevance')}")
+                                        if citation.get("source_url"):
+                                            st.markdown(f"[View Verified Judgment on Indian Kanoon]({citation.get('source_url')})")
                                         st.write("---")
 
                 except httpx.ConnectError:

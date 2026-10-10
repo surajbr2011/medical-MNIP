@@ -122,9 +122,12 @@ def predict_risk(episode: FHIREpisode) -> RiskScoreResponse:
     shap_values, narrative, top_drivers = explain_risk(ensemble, fv, risk_score)
     
     return RiskScoreResponse(
-        risk_score=risk_score,
+        risk_score=round(risk_score, 4),
         risk_level=risk_level,
         shap_values=shap_values,
         narrative=narrative,
-        top_drivers=top_drivers
+        top_drivers=top_drivers,
+        baseline_risk=0.014,
+        explanation_scale="native log-odds contribution",
+        disclaimer="Statistical risk associations based on clinical features; not proof of clinical causation or negligence."
     )

@@ -1,0 +1,166 @@
+{
+  "evaluation_timestamp": "2026-10-10T12:47:26.869932",
+  "clinical_risk_ensemble": {
+    "sample_size_total": 200,
+    "test_sample_size": 60,
+    "prevalence": 0.28,
+    "roc_auc": 0.5595,
+    "roc_auc_ci_95": [
+      0.4179,
+      0.7373
+    ],
+    "pr_auc": 0.3099,
+    "brier_score": 0.495,
+    "brier_score_ci_95": [
+      0.3925,
+      0.587
+    ],
+    "ece": 0.5276,
+    "threshold_metrics": {
+      "0.25": {
+        "sensitivity": 1.0,
+        "specificity": 0.0465,
+        "precision": 0.2931,
+        "f1_score": 0.4533,
+        "tp": 17,
+        "fp": 41,
+        "tn": 2,
+        "fn": 0
+      },
+      "0.4": {
+        "sensitivity": 0.9412,
+        "specificity": 0.1395,
+        "precision": 0.3019,
+        "f1_score": 0.4571,
+        "tp": 16,
+        "fp": 37,
+        "tn": 6,
+        "fn": 1
+      },
+      "0.5": {
+        "sensitivity": 0.8235,
+        "specificity": 0.1628,
+        "precision": 0.28,
+        "f1_score": 0.4179,
+        "tp": 14,
+        "fp": 36,
+        "tn": 7,
+        "fn": 3
+      },
+      "0.6": {
+        "sensitivity": 0.8235,
+        "specificity": 0.186,
+        "precision": 0.2857,
+        "f1_score": 0.4242,
+        "tp": 14,
+        "fp": 35,
+        "tn": 8,
+        "fn": 3
+      },
+      "0.75": {
+        "sensitivity": 0.8235,
+        "specificity": 0.3023,
+        "precision": 0.3182,
+        "f1_score": 0.459,
+        "tp": 14,
+        "fp": 30,
+        "tn": 13,
+        "fn": 3
+      }
+    },
+    "subgroups": {
+      "ICU Admission": {
+        "sample_size": 10,
+        "positives": 2,
+        "roc_auc": 0.625,
+        "brier_score": 0.5009
+      },
+      "Night Shift Care": {
+        "sample_size": 11,
+        "positives": 3,
+        "roc_auc": 0.5417,
+        "brier_score": 0.4766
+      },
+      "Weekend Admission": {
+        "sample_size": 8,
+        "positives": 1,
+        "roc_auc": 0.2857,
+        "brier_score": 0.545
+      },
+      "High-Risk Drug Administered": {
+        "sample_size": 11,
+        "positives": 6,
+        "roc_auc": 0.5,
+        "brier_score": 0.3756
+      }
+    }
+  },
+  "nlp_multitask_detection": {
+    "sample_size": 50,
+    "binary_screening": {
+      "accuracy": 0.6,
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1_score": 0.3333,
+      "auc": 0.76,
+      "confusion_matrix": [
+        [
+          25,
+          0
+        ],
+        [
+          20,
+          5
+        ]
+      ]
+    },
+    "who_icps_categories": {
+      "Clinical process/procedure": {
+        "mean_score": 0.4787,
+        "max_score": 0.4986,
+        "ground_truth_matches": 0
+      },
+      "Medical device/equipment": {
+        "mean_score": 0.5237,
+        "max_score": 0.5413,
+        "ground_truth_matches": 5
+      },
+      "Documentation": {
+        "mean_score": 0.4571,
+        "max_score": 0.4654,
+        "ground_truth_matches": 10
+      },
+      "Medication/IV fluids": {
+        "mean_score": 0.535,
+        "max_score": 0.5527,
+        "ground_truth_matches": 10
+      },
+      "Clinical administration": {
+        "mean_score": 0.5234,
+        "max_score": 0.5354,
+        "ground_truth_matches": 5
+      },
+      "Healthcare-associated infection": {
+        "mean_score": 0.4675,
+        "max_score": 0.4993,
+        "ground_truth_matches": 5
+      },
+      "Resources/organizational": {
+        "mean_score": 0.4944,
+        "max_score": 0.5066,
+        "ground_truth_matches": 10
+      },
+      "Nutrition/systemic functions": {
+        "mean_score": 0.5263,
+        "max_score": 0.5346,
+        "ground_truth_matches": 5
+      }
+    }
+  },
+  "clinical_ai_governance": {
+    "intended_use": "Decision-support triage and clinical incident review prioritization",
+    "autonomous_diagnosis": false,
+    "autonomous_legal_verdict": false,
+    "data_handling": "De-identified records; ABDM FHIR compliant"
+  }
+}
